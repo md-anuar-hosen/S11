@@ -1,59 +1,190 @@
-# Sample Cases (ECP/BVA)
+ # S11 Sample Cases – Room Booking
 
-## S1: Create Order
+## S1 – Create Booking (`POST /v1/bookings`)
+
 ### Inputs & Rules
-- email (string, valid RFC-like)
-- qty (int) in [1..999]
-- date (ISO-8601) not in the past
-Errors per ERROR_RULES.
+
+- Inputs:
+  - `roomId` (string, existing room)
+  - `startTime` (ISO 8601)
+  - `endTime` (ISO 8601)
+  - `guestEmail` (string, email)
+- Business rules:
+  - `startTime` < `endTime`
+  - `startTime` ≥ now
+  - `roomId` must exist
+  - booking must not overlap another booking for the same room
 
 ### Equivalence Classes
-- qty: V1=1..999, I1=≤0, I2=≥1000
-- email: V_email, I_email (missing '@' or empty)
-- date: V_date(today/future), I_date_past
+
+- `roomId`
+  - `V_room_existing`: existing room ID
+  - `I_room_unknown`: non-existing room ID
+- `timeRange`
+  - `V_time_future`: start ≥ now, end > start
+  - `I_time_past`: start < now
+  - `I_time_inverted`: start ≥ end
+- `conflict`
+  - `V_no_conflict`: no overlapping booking
+  - `I_conflict`: overlaps existing booking
+- `email`
+  - `V_email`: well-formed email
+  - `I_email`: empty / invalid
 
 ### Boundaries
-- qty: 0, 1, 999, 1000
-- date: today−1, today, today+1
+
+- `startTime`: now-1min, now, now+1min
+- `endTime`: start+0min, start+1min
+- booking overlapping exactly at boundary: end of booking A == start of booking B
 
 ### Test Ideas
-- TI1 [V1 happy]: valid email, qty=3, date=today → 201 + {orderId}
-- TI2 [I1/B]: qty=0 → 400_INVALID_INPUT (hint: qty)
-- TI3 [I2/B]: qty=1000 → 400_INVALID_INPUT (hint: qty)
-- TI4 [I_email]: email="" → 400_INVALID_INPUT (hint: email)
-- TI5 [B_date]: date=yesterday → 400_INVALID_INPUT (hint: date)
-- TI6 [idempotent]: same Idempotency-Key replay → 200 + same orderId
+
+- TI1 [S1][Happy][V_room_existing][V_time_future][V_no_conflict][V_email]
+- TI2 [S1][Invalid][I_time_past]
+- TI3 [S1][Invalid][I_time_inverted]
+- TI4 [S1][Invalid][I_room_unknown]
+- TI5 [S1][Conflict][I_conflict]
+- TI6 [S1][Idempotent] – same payload + same Idempotency-Key
 
 ### Test Cases
-- **TC1 [S1][V1]**  
-  Pre: auth user.  
-  Req: `POST /v1/orders {email, qty:3, date:today}` + `Idempotency-Key: k1`  
-  Exp: 201, body `{orderId}`; problem+json absent.
-- **TC2 [S1][I1][B]** qty=0 → 400, code `400_INVALID_INPUT`, hint includes `qty`.
-- **TC3 [S1][I2][B]** qty=1000 → 400, code `400_INVALID_INPUT`.
-- **TC4 [S1][I_email]** email invalid → 400, code `400_INVALID_INPUT`.
-- **TC5 [S1][I_date_past]** date=yesterday → 400, code `400_INVALID_INPUT`.
-- **TC6 [S1][idempotent]** replay same key `k1` → 200, same `{orderId}`; code `409_DUPLICATE_CREATE` **not** used (design returns 200).
 
-## S2: Login
+#### TC1 [S1][Happy]
+
+- Preconditions:
+  - Room `ROOM-101` exists.
+  - No bookings for `ROOM-101` in the chosen time window.
+- Input:
+  - `POST /v1/bookings`
+  - Body:
+    ```json
+    {
+      "roomId": "ROOM-101",
+      "startTime": "2025-11-25T10:00:00Z",
+      "endTime": "2025-11-25T11:00:00Z",
+      "guestEmail": "user@example.com"
+    }
+    ```
+  - Headers: `Idempotency-Key: "idem-001"`
+- Expected:
+  - Status: `201`
+  - Body: contains `bookingId` and echoes `roomId`.
+  - No `error` field.
+  - DB contains booking with same values.
+
+#### TC2 [S1][I_time_past]
+
+- Preconditions:
+  - System “now” = 2025-11-25T10:00:00Z.
+- Input:
+  - `startTime = 2025-11-25T09:00:00Z`
+  - `endTime = 2025-11-25T10:00:00Z`
+- Expected:
+  - Status: `400`
+  - Body:
+    - `code = "400_INVALID_DATE_RANGE"`
+    - `hint` explains that start must be in future.
+    - `correlationId` present.
+
+#### TC3 [S1][I_time_inverted]
+
+- Input:
+  - `startTime = 2025-11-25T11:00:00Z`
+  - `endTime   = 2025-11-25T10:00:00Z`
+- Expected:
+  - Status: `400`
+  - `code = "400_INVALID_DATE_RANGE"`
+
+#### TC4 [S1][I_room_unknown]
+
+- Input:
+  - `roomId = "ROOM-UNKNOWN"`
+- Expected:
+  - Status: `404`
+  - `code = "404_ROOM_NOT_FOUND"`
+
+#### TC5 [S1][I_conflict]
+
+- Preconditions:
+  - Existing booking for `ROOM-101` from 10:00–11:00.
+- Input:
+  - Request 2 for `ROOM-101` from 10:30–11:00.
+- Expected:
+  - Status: `409`
+  - `code = "409_BOOKING_CONFLICT"`
+
+#### TC6 [S1][Idempotent]
+
+- Preconditions:
+  - Same as TC1; no booking yet.
+- Steps:
+  1. First call with `Idempotency-Key: "idem-xyz"`.
+     - Expect 201 + `bookingId = BKG-123`.
+  2. Second call with **same body and same key**.
+     - Expect 200 + `bookingId = BKG-123` (same as first).
+
+---
+
+## S2 – Cancel Booking (`POST /v1/bookings/{id}/cancel`)
+
 ### Inputs & Rules
-- email, password; lockout after 5 failed attempts; JWT returned on success.
 
-### Classes & Boundaries
-- email: V_email / I_email
-- password: V_pwd / I_pwd (wrong)
-- attempts: 0..5 → lockout at 5 (boundary)
+- Inputs:
+  - Path param: `id` (booking ID).
+  - Authenticated user.
+- Rules:
+  - Booking must exist.
+  - Only owner or admin can cancel.
+  - Cannot cancel after booking has started.
 
-### Test Ideas
-- TI1 [happy]: valid creds → 200 + token
-- TI2 [invalid email]: bad format → 400_INVALID_INPUT (email)
-- TI3 [wrong pwd]: → 401_UNAUTHENTICATED
-- TI4 [lockout B]: 5th fail → 429_TOO_MANY_ATTEMPTS
-- TI5 [post-lockout]: subsequent try within window → 429
+### Equivalence Classes
+
+- `id`
+  - `V_id_existing`: existing booking ID.
+  - `I_id_unknown`: non-existing ID.
+- `auth`
+  - `V_owner`: owner of booking.
+  - `V_admin`: admin role.
+  - `I_otherUser`: authenticated user but not owner/admin.
+  - `I_unauth`: unauthenticated.
+- `time`
+  - `V_future`: booking start in future.
+  - `I_started`: start in the past.
 
 ### Test Cases
-- **TC1 [S2][V_email,V_pwd]** `POST /v1/auth/login` → 200 + `{token}`
-- **TC2 [S2][I_email]** email="abc" → 400_INVALID_INPUT
-- **TC3 [S2][I_pwd]** wrong password → 401_UNAUTHENTICATED
-- **TC4 [S2][B_lockout]** 5 rapid fails → 429_TOO_MANY_ATTEMPTS
-- **TC5 [S2][lockout_window]** try again within window → 429
+
+#### TC7 [S2][Happy][V_id_existing][V_owner][V_future]
+
+- Preconditions:
+  - Booking `BKG-123` exists in future.
+  - Current user is owner.
+- Input:
+  - `POST /v1/bookings/BKG-123/cancel`
+- Expected:
+  - Status: `200`
+  - Body: `{ "status": "cancelled" }` (or equivalent).
+  - DB: booking status updated to `cancelled`.
+
+#### TC8 [S2][NotFound][I_id_unknown]
+
+- Input:
+  - `POST /v1/bookings/UNKNOWN/cancel`
+- Expected:
+  - Status: `404`
+  - `code = "404_BOOKING_NOT_FOUND"`
+
+#### TC9 [S2][Forbidden][I_otherUser]
+
+- Preconditions:
+  - Booking `BKG-123` belongs to user A.
+  - Logged-in user is user B.
+- Expected:
+  - Status: `403`
+  - `code = "403_FORBIDDEN"`
+
+#### TC10 [S2][Conflict][I_started]
+
+- Preconditions:
+  - Booking `BKG-123` started 1 hour ago.
+- Expected:
+  - Status: `409`
+  - `code = "409_CANNOT_CANCEL_STARTED"`
