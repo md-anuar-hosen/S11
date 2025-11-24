@@ -1,4 +1,10 @@
  # S11 Mini Test Plan – Room Booking
+ # S11 – Mini Test Plan
+
+Stories:
+- S1 – Create Booking: https://github.com/md-anuar-hosen/S11/issues/1
+- S2 – Cancel Booking: https://github.com/md-anuar-hosen/S11/issues/2
+
 
 ## 1. Stories Covered
 
