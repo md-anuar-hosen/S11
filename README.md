@@ -1,25 +1,23 @@
- 
-# S11 – Mini Test Plan & Sample Cases
+ # S11 – Mini Test Plan & Sample Cases
 
-This module defines a focused test strategy for two key Room Booking stories:
+## Purpose
+Turn two core stories into a structured test plan using ECP/BVA.
 
-- **S1 – Create Booking** (`POST /v1/bookings`)
-- **S2 – Cancel Booking** (`POST /v1/bookings/{id}/cancel`)
+## Stories
 
-## Artifacts
+- **S1 – Create Booking**  
+  https://github.com/md-anuar-hosen/S11/issues/1
 
-- Mini test plan: [`/S11/MiniTestPlan.md`](./MiniTestPlan.md)
-- Sample cases (ECP/BVA): [`/S11/SampleCases.md`](./SampleCases.md)
-- Error rules referenced: [`/docs/errors/ERROR_RULES.md`](../docs/errors/ERROR_RULES.md)
-- AI use (if used in planning): [`/docs/ai/AI_Use_Log.md`](../docs/ai/AI_Use_Log.md)
+- **S2 – Cancel Booking**  
+  https://github.com/md-anuar-hosen/S11/issues/2
 
-## Story References
+## Files in this folder
 
-- **S1 – Create Booking:**  ./SampleCases.md#s1--create-booking 
-- **S2 – Cancel Booking:**  ./SampleCases.md#s2--cancel-booking
+- Mini test plan: [`./MiniTestPlan.md`](./MiniTestPlan.md)
+- Sample cases (ECP/BVA): [`./SampleCases.md`](./SampleCases.md)
 
-Existing tests that already implement some cases:
+## Supporting docs (from S10 repo)
 
-- `tests/booking/createBooking.unit.test.ts`
-- `tests/booking/createBooking.contract.test.ts`
-- `tests/booking/cancelBooking.unit.test.ts` (optional / future)
+- Error rules: `/docs/errors/ERROR_RULES.md`
+- Review checklist: `/docs/review/Review_Checklist_v1.md`
+- AI use log: `/docs/ai/AI_Use_Log.md`
