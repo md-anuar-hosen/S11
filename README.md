@@ -15,8 +15,8 @@ This module defines a focused test strategy for two key Room Booking stories:
 
 ## Story References
 
-- **S1 – Create Booking:** `<ADD LINK TO ISSUE / BACKLOG STORY>`
-- **S2 – Cancel Booking:** `<ADD LINK TO ISSUE / BACKLOG STORY>`
+- **S1 – Create Booking:**  ./SampleCases.md#s1--create-booking 
+- **S2 – Cancel Booking:**  ./SampleCases.md#s2--cancel-booking
 
 Existing tests that already implement some cases:
 
