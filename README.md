@@ -1,12 +1,25 @@
-# S11 — Mini Test Plan & Sample Cases
+ 
+# S11 – Mini Test Plan & Sample Cases
 
-Scope: turn two real stories (S1, S2) into a concise plan with ECP/BVA sample cases.
+This module defines a focused test strategy for two key Room Booking stories:
 
-Links
-- Mini Test Plan: [/S11/MiniTestPlan.md](/S11/MiniTestPlan.md)
-- Sample Cases: [/S11/SampleCases.md](/S11/SampleCases.md)
-- Error rules: [/docs/errors/ERROR_RULES.md](/docs/errors/ERROR_RULES.md)
-- AI log (if used): [/docs/ai/AI_Use_Log.md](/docs/ai/AI_Use_Log.md)
-- Stories (issues): <LINK_S1_ISSUE> , <LINK_S2_ISSUE>
+- **S1 – Create Booking** (`POST /v1/bookings`)
+- **S2 – Cancel Booking** (`POST /v1/bookings/{id}/cancel`)
 
-Repo/Branch policy: PR + green CI required for merge (see S7 branch protection).
+## Artifacts
+
+- Mini test plan: [`/S11/MiniTestPlan.md`](./MiniTestPlan.md)
+- Sample cases (ECP/BVA): [`/S11/SampleCases.md`](./SampleCases.md)
+- Error rules referenced: [`/docs/errors/ERROR_RULES.md`](../docs/errors/ERROR_RULES.md)
+- AI use (if used in planning): [`/docs/ai/AI_Use_Log.md`](../docs/ai/AI_Use_Log.md)
+
+## Story References
+
+- **S1 – Create Booking:** `<ADD LINK TO ISSUE / BACKLOG STORY>`
+- **S2 – Cancel Booking:** `<ADD LINK TO ISSUE / BACKLOG STORY>`
+
+Existing tests that already implement some cases:
+
+- `tests/booking/createBooking.unit.test.ts`
+- `tests/booking/createBooking.contract.test.ts`
+- `tests/booking/cancelBooking.unit.test.ts` (optional / future)
